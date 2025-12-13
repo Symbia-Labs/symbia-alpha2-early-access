@@ -26,3 +26,5 @@ If you prefer manual download, grab the latest `symbia-seed-alpha2-*.tar.gz` fro
 
 Notes:
 - Release artifacts omit large model files to keep the download small; fetch models separately only if you need them.
+- SHA256 verification is required by the installer. Cosign signatures (keyless) are attached to releases; verify with:
+  - `cosign verify-blob --certificate <tar.gz>.crt --signature <tar.gz>.sig --certificate-identity-regexp "https://github.com/Symbia-Labs/symbia-seed/.*" --certificate-oidc-issuer https://token.actions.githubusercontent.com <tar.gz>`

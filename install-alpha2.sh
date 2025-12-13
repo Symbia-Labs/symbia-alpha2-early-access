@@ -67,8 +67,8 @@ fetch() {
 verify_checksum() {
   local archive="$1" checksum_file="$2"
   if [[ ! -f "$checksum_file" ]]; then
-    echo "Checksum file missing; skipping verification." >&2
-    return 0
+    echo "Checksum file missing; aborting." >&2
+    exit 1
   fi
   local tool
   if command -v sha256sum >/dev/null 2>&1; then
@@ -116,11 +116,11 @@ main() {
     exit 1
   fi
 
-  if fetch "${url_base}/${base}.sha256" "$checksum"; then
-    verify_checksum "$archive" "$checksum"
-  else
-    echo "Checksum not found; proceeding without verification." >&2
+  if ! fetch "${url_base}/${base}.sha256" "$checksum"; then
+    echo "Failed to download checksum ${url_base}/${base}.sha256" >&2
+    exit 1
   fi
+  verify_checksum "$archive" "$checksum"
 
   install_files "$archive"
   link_shims
