@@ -7,7 +7,7 @@ REPO="${REPO:-Symbia-Labs/symbia-alpha2-early-access}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.symbia-seed-dist}"
 BIN_DIR="${BIN_DIR:-$HOME/bin}"
 VERSION="${VERSION:-}"
-FORCE=0
+FORCE=1
 
 usage() {
   cat <<'EOF_HELP'
@@ -85,10 +85,6 @@ verify_checksum() {
 install_files() {
   local archive="$1"
   [[ "$FORCE" -eq 1 ]] && rm -rf "$INSTALL_DIR"
-  if [[ -d "$INSTALL_DIR" ]]; then
-    echo "Install dir exists ($INSTALL_DIR). Re-run with --force to overwrite." >&2
-    exit 1
-  fi
   mkdir -p "$INSTALL_DIR"
   tar -xzf "$archive" -C "$INSTALL_DIR" --strip-components 1
 }
