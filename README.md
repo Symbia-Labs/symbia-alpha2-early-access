@@ -23,3 +23,6 @@ alpha-2 missionctl
 ## Manual download
 
 If you prefer manual download, grab the latest `symbia-seed-alpha2-*.tar.gz` from Releases and unpack anywhere, then add `scripts/seed.sh` and `scripts/alpha-2.sh` to your PATH.
+
+Notes:
+- Release artifacts omit large model files to keep the download small; fetch models separately only if you need them.
