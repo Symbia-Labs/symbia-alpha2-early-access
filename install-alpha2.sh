@@ -3,6 +3,16 @@
 # Downloads a release tarball from this repo, verifies checksum, and installs shims.
 set -euo pipefail
 
+TMP_DIR=""
+
+cleanup() {
+  if [[ -n "$TMP_DIR" && -d "$TMP_DIR" ]]; then
+    rm -rf "$TMP_DIR"
+  fi
+}
+
+trap cleanup EXIT
+
 REPO="${REPO:-Symbia-Labs/symbia-alpha2-early-access}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.symbia-seed-dist}"
 BIN_DIR="${BIN_DIR:-$HOME/bin}"
@@ -66,18 +76,32 @@ fetch() {
 
 verify_checksum() {
   local archive="$1" checksum_file="$2"
-  if [[ ! -f "$checksum_file" ]]; then
-    echo "Checksum file missing; aborting." >&2
+  if [[ ! -f "$archive" ]]; then
+    echo "Archive missing at $archive; aborting." >&2
     exit 1
   fi
-  local tool
-  if command -v sha256sum >/dev/null 2>&1; then
-    tool="sha256sum"
-  else
-    tool="shasum -a 256"
+  if [[ ! -f "$checksum_file" ]]; then
+    echo "Checksum file missing at $checksum_file; aborting." >&2
+    exit 1
   fi
-  if ! (cd "$(dirname "$checksum_file")" && $tool -c "$(basename "$checksum_file")"); then
+  local -a tool
+  if command -v sha256sum >/dev/null 2>&1; then
+    tool=(sha256sum)
+  else
+    tool=(shasum -a 256)
+  fi
+  local expected
+  expected="$(awk 'match($0,/[0-9a-fA-F]{64}/){print substr($0,RSTART,RLENGTH); exit}' "$checksum_file")"
+  if [[ -z "$expected" ]]; then
+    echo "No checksum found in $checksum_file; aborting." >&2
+    exit 1
+  fi
+  local actual
+  actual="$("${tool[@]}" "$archive" | awk '{print $1}')"
+  if [[ "$actual" != "$expected" ]]; then
     echo "Checksum verification failed." >&2
+    echo "Expected: $expected" >&2
+    echo "Actual:   $actual" >&2
     exit 1
   fi
 }
@@ -105,10 +129,11 @@ main() {
   fi
   local base="symbia-seed-alpha2-${VERSION}"
   local url_base="https://github.com/${REPO}/releases/download/${VERSION}"
-  local tmp
-  tmp="$(mktemp -d)"
-  local archive="$tmp/${base}.tar.gz"
-  local checksum="$tmp/${base}.sha256"
+  TMP_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t symbia-alpha2)"
+  echo "Temp dir: $TMP_DIR"
+  local archive="$TMP_DIR/${base}.tar.gz"
+  local checksum="$TMP_DIR/${base}.sha256"
+  echo "Archive:  $archive"
 
   echo "Downloading ${base} ..."
   if ! fetch "${url_base}/${base}.tar.gz" "$archive"; then
