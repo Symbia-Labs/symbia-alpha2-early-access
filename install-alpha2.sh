@@ -18,6 +18,7 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/.symbia-seed-dist}"
 BIN_DIR="${BIN_DIR:-$HOME/bin}"
 VERSION="${VERSION:-}"
 FORCE=1
+ALPHA2_SCRIPT_URL="${ALPHA2_SCRIPT_URL:-}"
 
 usage() {
   cat <<'EOF_HELP'
@@ -119,6 +120,22 @@ link_shims() {
   ln -sf "$INSTALL_DIR/scripts/alpha-2.sh" "$BIN_DIR/alpha-2"
 }
 
+patch_alpha2_script() {
+  local dest="$INSTALL_DIR/scripts/alpha-2.sh"
+  local src_path="${ALPHA2_SCRIPT_PATH:-}"
+  local src_url="${ALPHA2_SCRIPT_URL:-https://raw.githubusercontent.com/${REPO}/main/scripts/alpha-2.sh}"
+  if [[ -n "$src_path" && -f "$src_path" ]]; then
+    cp "$src_path" "$dest"
+  else
+    echo "Refreshing alpha-2.sh from $src_url ..."
+    if ! curl -fL "$src_url" -o "$dest"; then
+      echo "Warning: failed to refresh alpha-2.sh from $src_url; keeping packaged version." >&2
+      return
+    fi
+  fi
+  chmod +x "$dest" || true
+}
+
 main() {
   parse_args "$@"
   need_cmd curl
@@ -148,6 +165,7 @@ main() {
   verify_checksum "$archive" "$checksum"
 
   install_files "$archive"
+  patch_alpha2_script
   link_shims
 
   echo ""
